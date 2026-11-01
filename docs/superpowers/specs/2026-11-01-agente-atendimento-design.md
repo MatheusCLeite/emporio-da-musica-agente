@@ -15,12 +15,12 @@ Do usuário:
 - Framework: LangGraph.
 - Escopo: essencial, por causa do prazo de até 2 dias.
 - Prazo exato: ainda será conferido pelo usuário; precisa ser informado antes da publicação.
-- Fallback: se o modelo principal falhar, usar outro Gemini com limite maior e, depois, outros modelos gratuitos (Mistral/OpenRouter foram os exemplos citados).
+- Fallback: se o modelo principal falhar, usar outro Gemini com limite maior e, depois, modelos gratuitos do Groq, escolhidos pelo autor do plano (o usuário trocou o OpenRouter pelo Groq durante a implementação).
 
 Do autor do plano (podem ser contestadas):
 - **Recomendação de produtos (o usuário não respondeu a essa pergunta):** o agente recomenda com base em descrição e specs, exceto nos produtos com conflito. Ver "Conflitos no catálogo".
 - Modelo `gemini-3.8-flash` (estável, com camada gratuita, conforme a documentação de 28/10/2026). O suporte a function calling será validado em execução real, pois a documentação não traz lista por modelo.
-- Cadeia de fallback: `gemini-3.8-flash` -> Gemini de limite maior -> modelo gratuito via OpenRouter. Candidato do segundo elo: `gemini-3.5-flash-lite`, a confirmar nos limites da conta no AI Studio. OpenRouter em vez de integrar Mistral à parte: um único cliente compatível com OpenAI dá acesso a vários provedores, inclusive Mistral se houver modelo gratuito com ferramentas. O ID fica em `OPENROUTER_MODEL` e é validado no passo 2.
+- Cadeia de fallback: `gemini-3.8-flash` -> Gemini de limite maior -> `openai/gpt-oss-120b` -> `llama-3.3-70b-versatile`, os dois últimos no Groq. Candidato do segundo elo: `gemini-3.5-flash-lite`, a confirmar nos limites da conta no AI Studio. `openai/gpt-oss-120b` é modelo de produção do Groq com ferramentas; `llama-3.3-70b-versatile` é de outra família e também suporta ferramentas, o que reduz o risco de falha comum. Os IDs ficam em `GROQ_MODEL` e `GROQ_FALLBACK_MODEL` e são validados no passo 2, junto com a disponibilidade na camada gratuita.
 - Function calling com ferramentas parametrizadas, sem SQL gerado por LLM, por segurança e LGPD.
 - Políticas por seção do manual escolhida por tema, sem banco vetorial. São 8 páginas com seções bem delimitadas; embeddings acrescentariam infraestrutura sem ganho.
 - Interface CLI, com histórico em SQLite por `thread_id`.
@@ -41,7 +41,7 @@ Grafo: `START -> agente -> (tool_calls? ToolNode -> agente : END)`, com `StateGr
 
 A cada chamada, o nó do agente monta a mensagem de sistema com a data e hora atuais em `America/Campo_Grande` e se a loja está aberta. `AGENT_NOW` permite fixar esse instante. Fora do expediente, o agente continua respondendo e informa quando a equipe retorna.
 
-Fallback: cada modelo recebe `bind_tools` e a cadeia usa `with_fallbacks`, acionada apenas por erro de API (429, 5xx, timeout), nunca por qualidade da resposta. O elo OpenRouter (`ChatOpenAI` com `base_url`) só entra se `OPENROUTER_API_KEY` existir, então o projeto roda apenas com a chave Gemini. Retries baixos no modelo principal, para a troca ser rápida. `--debug` e `--replay` mostram qual modelo respondeu. É preciso testar a troca no meio de uma conversa com chamadas de ferramenta já no histórico, pois os provedores têm formatos diferentes.
+Fallback: cada modelo recebe `bind_tools` e a cadeia usa `with_fallbacks`, acionada apenas por erro de API (429, 5xx, timeout), nunca por qualidade da resposta. Os elos Groq (`ChatOpenAI` com `base_url`) só entram se `GROQ_API_KEY` existir, então o projeto roda apenas com a chave Gemini. Retries baixos no modelo principal, para a troca ser rápida. `--debug` e `--replay` mostram qual modelo respondeu. É preciso testar a troca no meio de uma conversa com chamadas de ferramenta já no histórico, pois os provedores têm formatos diferentes.
 
 Arquivos:
 - `store.py`: lê os CSVs a cada chamada (edições no CSV valem imediatamente) e concentra as regras de preço, disponibilidade e parcelas.
@@ -115,7 +115,7 @@ Persona: assistente virtual da loja, informal mas profissional, amigo que entend
 ## Passos de implementação (um commit real por passo)
 
 1. Base: `git init`, `.gitignore` (excluir `.env`, `runtime/`, `*.3mf` e o PDF do enunciado), `requirements.txt`, `.env.example`, venv com versões atuais. Este design vai para `docs/superpowers/specs/2026-11-01-agente-atendimento-design.md`.
-2. Validar com chamada real, um a um: `gemini-3.8-flash`, o Gemini de limite maior e o modelo OpenRouter, cada um com uma ferramenta, para confirmar function calling e o formato de `content`.
+2. Validar com chamada real, um a um: `gemini-3.8-flash`, o Gemini de limite maior e os dois modelos Groq, cada um com uma ferramenta, para confirmar function calling e o formato de `content`.
 3. `store.py` + testes (TDD).
 4. `policies.py` + testes.
 5. `tools.py` + testes (LGPD e indisponíveis).
@@ -125,7 +125,7 @@ Persona: assistente virtual da loja, informal mas profissional, amigo que entend
 9. README.
 10. **Pedir confirmação do usuário e o horário exato do prazo**, e só então criar o repositório público com `gh` e publicar. O usuário envia o link por e-mail.
 
-Dependências previstas: `langgraph`, `langgraph-checkpoint-sqlite`, `langchain-google-genai`, `langchain-openai` (OpenRouter), `pandas`, `pypdf`, `python-dotenv`, `tzdata`, `pytest`.
+Dependências previstas: `langgraph`, `langgraph-checkpoint-sqlite`, `langchain-google-genai`, `langchain-openai` (Groq), `pandas`, `pypdf`, `python-dotenv`, `tzdata`, `pytest`.
 
 ## Conversas de exemplo (5, com `AGENT_NOW` em horário comercial)
 
@@ -145,10 +145,10 @@ Dependências previstas: `langgraph`, `langgraph-checkpoint-sqlite`, `langchain-
 
 ## Riscos e dependências
 
-- **Chaves:** não há `GOOGLE_API_KEY` no ambiente, e o elo OpenRouter também pede `OPENROUTER_API_KEY`. O usuário precisa fornecer antes do passo 2, sem colar as chaves no chat, direto no `.env`.
+- **Chaves:** não há `GOOGLE_API_KEY` no ambiente, e os elos Groq também pedem `GROQ_API_KEY`. O usuário precisa fornecer antes do passo 2, sem colar as chaves no chat, direto no `.env`.
 - **Cotas:** os limites gratuitos só aparecem no AI Studio. Capturar os exemplos cedo; mensagem amigável se toda a cadeia falhar. Se o Gemini de "limite maior" não se confirmar na conta, o usuário indica outro.
 - **Fallback entre provedores:** modelos menores podem seguir pior as regras do prompt. A resposta continua limitada pelas ferramentas, mas a qualidade pode cair; os exemplos são capturados com o modelo principal, e isso vai nas limitações.
-- **Privacidade:** na camada gratuita, o conteúdo pode ser usado para melhorar produtos do Google, e modelos gratuitos no OpenRouter têm termos próprios a conferir. Aceitável com dados fictícios; produção exigiria camada paga. Vai nas limitações.
+- **Privacidade:** na camada gratuita, o conteúdo pode ser usado para melhorar produtos do Google, e o Groq tem termos próprios a conferir. Aceitável com dados fictícios; produção exigiria camada paga. Vai nas limitações.
 
 ## Com mais tempo (para o README)
 

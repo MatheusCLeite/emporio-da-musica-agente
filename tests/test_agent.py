@@ -115,12 +115,22 @@ def test_historico_sobrevive_a_reabertura(tmp_path):
     assert [m.content for m in estado if isinstance(m, HumanMessage)] == ["primeira", "segunda"]
 
 
-def test_build_models_exige_chave_e_opcional_openrouter():
+def test_build_models_exige_chave_gemini():
     with pytest.raises(ConfigError):
         build_models(ALL_TOOLS, {})
     assert len(build_models(ALL_TOOLS, {"GOOGLE_API_KEY": "x"})) == 2
-    assert len(build_models(ALL_TOOLS, {"GOOGLE_API_KEY": "x", "OPENROUTER_API_KEY": "y"})) == 2
-    assert len(build_models(ALL_TOOLS, {"GOOGLE_API_KEY": "x", "OPENROUTER_API_KEY": "y", "OPENROUTER_MODEL": "m"})) == 3
+
+
+def test_build_models_acrescenta_groq_depois_dos_gemini():
+    modelos = build_models(ALL_TOOLS, {"GOOGLE_API_KEY": "x", "GROQ_API_KEY": "y"})
+    groq = [m.bound for m in modelos[2:]]
+    assert [m.model_name for m in groq] == ["openai/gpt-oss-120b", "llama-3.3-70b-versatile"]
+    assert {m.openai_api_base for m in groq} == {"https://api.groq.com/openai/v1"}
+
+
+def test_build_models_aceita_trocar_modelos_groq():
+    env = {"GOOGLE_API_KEY": "x", "GROQ_API_KEY": "y", "GROQ_MODEL": "a", "GROQ_FALLBACK_MODEL": "b"}
+    assert [m.bound.model_name for m in build_models(ALL_TOOLS, env)[2:]] == ["a", "b"]
 
 
 def test_prompt_traz_data_e_status():

@@ -381,7 +381,7 @@ git commit -m "feat: add LangGraph agent with model fallback and CLI"
 
 ### Task 5: Validar modelos reais e ajustar o prompt
 
-**Bloqueio:** precisa de `GOOGLE_API_KEY` e `OPENROUTER_API_KEY` no `.env`, além de `OPENROUTER_MODEL` (modelo gratuito com ferramentas). Peça ao usuário e pare até tê-las.
+**Bloqueio:** precisa de `GOOGLE_API_KEY` e `GROQ_API_KEY` no `.env`. Peça ao usuário e pare até tê-las. O usuário trocou o OpenRouter pelo Groq depois da Task 4; onde as tarefas anteriores citam OpenRouter, vale o Groq.
 
 **Files:**
 - Create: `tests/test_live.py`
@@ -401,7 +401,7 @@ Expected: 5 passam.
 - [ ] **Step 3: Testar a troca real de provedor**
 
 Numa conversa com ferramentas no histórico, defina `GEMINI_MODEL` e `GEMINI_FALLBACK_MODEL` como IDs inválidos e continue no mesmo `--thread --debug`.
-Expected: o modelo OpenRouter responde sem erro de formato do histórico. Se falhar, conserte e adicione o caso aos testes; se não houver conserto simples, registre nas limitações.
+Expected: o modelo Groq responde sem erro de formato do histórico. Se falhar, conserte e adicione o caso aos testes; se não houver conserto simples, registre nas limitações.
 
 - [ ] **Step 4: Ajustar o prompt com as perguntas do enunciado e dos 5 exemplos**
 

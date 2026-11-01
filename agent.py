@@ -19,7 +19,7 @@ FALLBACK_TEXT = (
     "Poxa, tive um problema técnico e não consegui responder agora. "
     "Tenta de novo em instantes ou fala com a equipe pelo WhatsApp (67) 3321-4500."
 )
-OPENROUTER_URL = "https://openrouter.ai/api/v1"
+GROQ_URL = "https://api.groq.com/openai/v1"
 MAX_RODADAS_DE_FERRAMENTAS = 4
 RECURSION_LIMIT = 2 * MAX_RODADAS_DE_FERRAMENTAS + 2
 # Só falhas de API acionam o modelo reserva; erro de programação deve aparecer.
@@ -39,16 +39,15 @@ def build_models(tools, env=os.environ) -> list[Runnable]:
         env.get("GEMINI_FALLBACK_MODEL") or "gemini-3.5-flash-lite",
     )
     modelos = [ChatGoogleGenerativeAI(model=n, google_api_key=chave, temperature=0.2, max_retries=1) for n in nomes]
-    if env.get("OPENROUTER_API_KEY") and env.get("OPENROUTER_MODEL"):
-        modelos.append(
-            ChatOpenAI(
-                model=env["OPENROUTER_MODEL"],
-                api_key=env["OPENROUTER_API_KEY"],
-                base_url=OPENROUTER_URL,
-                temperature=0.2,
-                max_retries=1,
-            )
+    if env.get("GROQ_API_KEY"):
+        nomes_groq = (
+            env.get("GROQ_MODEL") or "openai/gpt-oss-120b",
+            env.get("GROQ_FALLBACK_MODEL") or "llama-3.3-70b-versatile",
         )
+        modelos += [
+            ChatOpenAI(model=n, api_key=env["GROQ_API_KEY"], base_url=GROQ_URL, temperature=0.2, max_retries=1)
+            for n in nomes_groq
+        ]
     return [m.bind_tools(tools) for m in modelos]
 
 
