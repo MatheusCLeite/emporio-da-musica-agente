@@ -1,0 +1,8 @@
+.env
+.venv/
+runtime/
+__pycache__/
+.pytest_cache/
+.superpowers/
+*.3mf
+desafio_tecnico_ai_eng_artefact.pdf
