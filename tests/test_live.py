@@ -24,6 +24,7 @@ pytestmark = pytest.mark.skipif(
         ("Cadê o pedido 8? Meu telefone é (67) 99654-7821", "consultar_pedido"),
         ("Qual a capital da França?", None),
         ("Vocês têm violões até R$ 1000?", "buscar_produtos"),
+        ("Estamos em novembro, cadê os descontos de Black Friday?", "buscar_produtos"),
     ],
 )
 def test_modelo_escolhe_a_ferramenta_certa(pergunta, ferramenta):

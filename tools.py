@@ -61,7 +61,7 @@ def consultar_politicas(tema: Tema) -> str:
 
     loja: endereço, contatos e o que a loja vende. horarios: funcionamento. pagamento: formas e parcelamento.
     trocas_devolucoes: arrependimento, defeito e preferência. frete: entregas e rastreio.
-    promocoes: regras de desconto. garantia: legal e de fabricante. privacidade: dados pessoais e LGPD.
+    promocoes: regras de desconto (o que está em promoção agora vem de buscar_produtos). garantia: legal e de fabricante. privacidade: dados pessoais e LGPD.
     """
     return get_policy(tema)
 

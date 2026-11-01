@@ -27,6 +27,12 @@ CORRECOES = [
     (r"contato@empóriodamusica\.com\.br", "contato@emporiodamusica.com.br"),
     (r"Parcela mínima de R\$ 100,00", "Parcela mínima conforme as regras abaixo"),
     (r"sem valor mínimo de parcela \(exceto abaixo de R\$\s+50,00\)", "parcela mínima de R$ 50,00"),
+    # O calendário descreve campanhas passadas e futuras; lido sozinho, vira promessa de desconto que o catálogo não tem.
+    (
+        r"6\.1 Tipos de Promoção",
+        "ATENÇÃO: o calendário abaixo não indica promoção ativa. Só vale o que buscar_produtos devolver "
+        "com em_promocao=true; se não trouxer a campanha, diga que ela não está ativa.\n6.1 Tipos de Promoção",
+    ),
 ]
 
 

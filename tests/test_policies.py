@@ -25,6 +25,11 @@ def test_contradicoes_corrigidas():
     assert "Parcela mínima de R$ 100,00" not in pag.split("3.1")[0]
 
 
+def test_calendario_de_promocoes_avisa_que_nao_indica_promocao_ativa():
+    texto = get_policy("promocoes")
+    assert texto.index("em_promocao=true") < texto.index("Black Friday")
+
+
 def test_tema_invalido():
     with pytest.raises(KeyError):
         get_policy("astrologia")
