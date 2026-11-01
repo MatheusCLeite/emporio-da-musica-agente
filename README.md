@@ -22,12 +22,14 @@ Preencha o `.env`:
 
 ```bash
 python cli.py                    # conversa interativa
-python cli.py --thread ana       # retoma a conversa "ana", mesmo depois de fechar o programa
-python cli.py --debug            # mostra ferramentas chamadas e modelo usado
+python cli.py --thread ana       # cria ou retoma a conversa "ana", mesmo depois de fechar o programa
+python cli.py --debug            # mostra ferramentas chamadas, modelo usado e falhas de API
 python cli.py --replay examples/inputs/01-violoes-e-preco.txt --out saida.md   # gera uma transcrição
 ```
 
-`AGENT_NOW` fixa data e hora, por exemplo `AGENT_NOW=2026-11-03T10:00:00`. Serve para reproduzir os exemplos, já que os pedidos do CSV são de 2026 e a loja fecha aos domingos.
+Sem `--thread`, cada execução começa uma conversa nova. Um thread guarda o contato e o pedido verificado de um único cliente, então não o reaproveite entre pessoas.
+
+`AGENT_NOW` fixa data e hora, por exemplo `AGENT_NOW=2026-11-03T10:00:00`. Serve para reproduzir os exemplos em horário comercial.
 
 ### Testes
 
@@ -63,14 +65,14 @@ O modelo decide o que consultar e como comunicar. Fatos e contas ficam em códig
 
 **Políticas por seção, sem banco vetorial.** São 8 páginas com seções bem delimitadas. Um tema escolhido em lista fechada devolve o trecho exato, sem infraestrutura de embeddings e sem risco de recuperar o parágrafo errado.
 
-**Cadeia de modelos.** Cada modelo só é acionado se o anterior falhar por erro de API (429, 5xx, rede ou timeout de 30 s), nunca por qualidade de resposta:
+**Cadeia de modelos.** Cada modelo só é acionado se o anterior falhar por erro de API (qualquer 4xx ou 5xx, rede, timeout de 30 s ou resposta malformada), nunca por qualidade de resposta:
 
 1. `gemini-3.8-flash`: principal.
 2. `gemini-3.5-flash-lite`: reserva do mesmo provedor.
 3. `openai/gpt-oss-120b` (Groq): outro provedor, para quando o Gemini inteiro falhar.
 4. `openai/gpt-oss-20b` (Groq): modelo de produção com ferramentas e cota própria.
 
-Se todos falharem, o cliente recebe uma mensagem amigável e a conversa continua depois. O Groq usa o cliente compatível com OpenAI, sem dependência a mais. A troca foi testada com modelos reais, nos dois sentidos, em conversas com ferramentas no histórico.
+Se todos falharem, o cliente recebe uma mensagem amigável, a conversa continua depois e `--debug` mostra o erro. O Groq usa o cliente compatível com OpenAI, sem dependência a mais. A troca foi testada com modelos reais, nos dois sentidos, em conversas com ferramentas no histórico.
 
 **Histórico em SQLite por `thread_id`.** Sobrevive ao fechamento do programa e não exige servidor. A mensagem de sistema fica fora do histórico e é remontada a cada chamada, para a data e o status da loja estarem sempre corretos.
 
@@ -127,6 +129,6 @@ Usei o Claude Code em todo o projeto, com este fluxo:
 3. **Design e plano:** documentos revisados antes de qualquer código, em [`docs/superpowers/`](docs/superpowers/).
 4. **Implementação com TDD:** testes escritos antes do código, com um commit por etapa.
 5. **Validação com modelos reais:** revelou o que os testes offline não pegavam. Erros 5xx do Gemini não acionavam o fallback, um modelo do Groq não estava disponível na conta e o agente prometeu Black Friday a partir do calendário do manual. Cada caso virou correção no código, no prompt ou em ambos.
-6. **Revisão:** as transcrições foram conferidas contra os CSVs e o manual, e uma nova sessão do assistente, sem o contexto da implementação, revisou o projeto inteiro no final.
+6. **Revisão:** as transcrições foram conferidas contra os CSVs e o manual. Uma nova sessão do assistente, sem o contexto da implementação, revisou o projeto inteiro e apontou, por exemplo, que a conversa padrão herdava dados de pedido do cliente anterior; os problemas críticos e importantes foram corrigidos.
 
 O assistente acelerou a implementação e a checagem dos dados; a validação com execuções reais continuou indispensável.

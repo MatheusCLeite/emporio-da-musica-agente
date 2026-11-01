@@ -1,11 +1,13 @@
 """Grafo LangGraph do agente e cadeia de modelos com fallback."""
 
+import logging
 import os
 import warnings
 
 import httpx
 import openai
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.exceptions import ContextOverflowError
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.runnables import Runnable
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_google_genai.chat_models import ChatGoogleGenerativeAIError, GoogleAPIError
@@ -20,6 +22,8 @@ from tools import ALL_TOOLS
 # gemini-3.5-flash-lite ignora a temperatura; o aviso só atrapalharia a conversa no terminal.
 warnings.filterwarnings("ignore", message=".*uses fixed sampling defaults.*")
 
+logger = logging.getLogger(__name__)
+
 FALLBACK_TEXT = (
     "Poxa, tive um problema técnico e não consegui responder agora. "
     "Tenta de novo em instantes ou fala com a equipe pelo WhatsApp (67) 3321-4500."
@@ -29,7 +33,16 @@ TIMEOUT_SEGUNDOS = 30
 MAX_RODADAS_DE_FERRAMENTAS = 4
 RECURSION_LIMIT = 2 * MAX_RODADAS_DE_FERRAMENTAS + 2
 # Só falhas de API acionam o modelo reserva; erro de programação deve aparecer.
-API_ERRORS = (ChatGoogleGenerativeAIError, GoogleAPIError, openai.APIError, httpx.TransportError)
+# ValueError e TypeError: é assim que os SDKs reagem a uma resposta 200 malformada do provedor.
+API_ERRORS = (
+    ChatGoogleGenerativeAIError,
+    GoogleAPIError,
+    ContextOverflowError,
+    openai.APIError,
+    httpx.HTTPError,
+    ValueError,
+    TypeError,
+)
 
 
 class ConfigError(Exception):
@@ -99,7 +112,8 @@ def build_graph(chain: Runnable, checkpointer):
             return {"messages": [AIMessage(content=FALLBACK_TEXT)]}
         try:
             resposta = chain.invoke([SystemMessage(content=system_message(agora())), *mensagens])
-        except API_ERRORS:
+        except API_ERRORS as erro:
+            logger.warning("Todos os modelos falharam: %s", erro)
             return {"messages": [AIMessage(content=FALLBACK_TEXT)]}
         if not resposta.tool_calls and not message_text(resposta).strip():
             return {"messages": [AIMessage(content=FALLBACK_TEXT)]}
@@ -114,8 +128,18 @@ def build_graph(chain: Runnable, checkpointer):
     return grafo.compile(checkpointer=checkpointer)
 
 
+def _resolver_ferramentas_interrompidas(graph, config) -> None:
+    # Chamada sem resultado no histórico faz o provedor rejeitar todos os turnos seguintes.
+    estado = graph.get_state(config)
+    if estado.next:
+        pendentes = estado.values["messages"][-1].tool_calls
+        resultados = [ToolMessage(content="Consulta interrompida.", tool_call_id=c["id"]) for c in pendentes]
+        graph.update_state(config, {"messages": resultados}, as_node="ferramentas")
+
+
 def respond(graph, thread_id: str, text: str) -> dict:
     config = {"configurable": {"thread_id": thread_id}, "recursion_limit": RECURSION_LIMIT}
+    _resolver_ferramentas_interrompidas(graph, config)
     anteriores = graph.get_state(config).values.get("messages", [])
     mensagens = graph.invoke({"messages": [HumanMessage(content=text)]}, config)["messages"]
     novas = mensagens[len(anteriores):]

@@ -1,10 +1,12 @@
 import io
+import json
 import sqlite3
 from datetime import datetime
 
 import httpx
 import pytest
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.exceptions import ContextOverflowError
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.runnables import RunnableLambda
 from langchain_google_genai.chat_models import ChatGoogleGenerativeAIError, GoogleAPIError
 from langgraph.checkpoint.memory import MemorySaver
@@ -65,8 +67,13 @@ def test_fallback_em_erro_de_api():
     [
         GoogleAPIError(503, {"error": {"code": 503, "message": "high demand", "status": "UNAVAILABLE"}}),
         httpx.ConnectTimeout("timeout"),
+        httpx.DecodingError("corpo inválido"),
+        json.JSONDecodeError("html de gateway", "<html>", 0),
+        ContextOverflowError("contexto excedido"),
+        ValueError("resposta 200 com erro"),
+        TypeError("choices nulo"),
     ],
-    ids=["gemini_503", "timeout_de_rede"],
+    ids=["gemini_503", "timeout_de_rede", "decodificacao", "nao_json", "contexto", "erro_em_200", "choices_nulo"],
 )
 def test_erro_de_servidor_ou_rede_aciona_reserva(erro):
     def falhar(_):
@@ -89,6 +96,49 @@ def test_erro_de_programacao_nao_aciona_reserva():
 def test_cadeia_inteira_falha_da_mensagem_amigavel():
     r = respond(build_graph(build_chain([modelo_429()]), MemorySaver()), "t", "oi")
     assert r["texto"] == FALLBACK_TEXT
+
+
+def test_falha_da_cadeia_fica_registrada_no_log(caplog):
+    respond(build_graph(build_chain([modelo_429()]), MemorySaver()), "t", "oi")
+    assert "429 RESOURCE_EXHAUSTED" in caplog.text
+
+
+def test_ferramenta_interrompida_nao_quebra_o_proximo_turno():
+    capturadas = []
+    graph = build_graph(modelo_em_sequencia(AIMessage(content="voltei"), capturadas=capturadas), MemorySaver())
+    config = {"configurable": {"thread_id": "t"}}
+    graph.update_state(config, {"messages": [HumanMessage(content="horário?"), chamada()]}, as_node="agente")
+    assert graph.get_state(config).next == ("ferramentas",)
+
+    assert respond(graph, "t", "oi de novo")["texto"] == "voltei"
+    tipos = [type(m) for m in capturadas[0]]
+    assert tipos == [SystemMessage, HumanMessage, AIMessage, ToolMessage, HumanMessage]
+
+
+def test_cli_sem_thread_nao_herda_conversa_anterior(tmp_path, monkeypatch):
+    capturadas = []
+
+    def responder(mensagens):
+        capturadas.append(mensagens)
+        return AIMessage(content="ok")
+
+    monkeypatch.setattr(cli, "CHECKPOINTS", tmp_path / "c.sqlite")
+    monkeypatch.setattr(cli, "build_models", lambda _: [])
+    monkeypatch.setattr(cli, "build_chain", lambda _: RunnableLambda(responder))
+    monkeypatch.setattr("sys.argv", ["cli.py"])
+    for texto in ("pedido 8, telefone 67 99654-7821", "qual o rastreio?"):
+        monkeypatch.setattr("sys.stdin", io.StringIO(texto + "\n"))
+        assert cli.main() == 0
+    assert [m.content for m in capturadas[1] if isinstance(m, HumanMessage)] == ["qual o rastreio?"]
+
+
+def test_cli_interativa_nao_mostra_traceback(monkeypatch, capsys):
+    def quebrar(_):
+        raise RuntimeError("banco indisponível")
+
+    monkeypatch.setattr("sys.stdin", io.StringIO("oi\n"))
+    cli.run_chat(build_graph(RunnableLambda(quebrar), MemorySaver()), "t", debug=False)
+    assert FALLBACK_TEXT in capsys.readouterr().out
 
 
 def test_conversa_continua_depois_de_falha():

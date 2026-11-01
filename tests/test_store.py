@@ -107,3 +107,26 @@ def test_status_loja(dt, esperado):
 def test_status_loja_informa_reabertura():
     s = status_loja(datetime.fromisoformat("2026-11-07T13:00").replace(tzinfo=TZ))
     assert "segunda" in s and "09:00" in s
+
+
+@pytest.mark.parametrize(
+    "termo",
+    ["Takamine GD-20", "Ohana CK20", "KA15S", "SGD195E", "RG-550", "RG 550", "Giannini GF3D", "gd20", "CK-20"],
+)
+def test_busca_aceita_codigo_de_modelo_escrito_de_outro_jeito(termo):
+    assert search_products(termo=termo)["total_encontrado"] >= 1
+
+
+def test_codigo_de_modelo_nao_vira_palpite():
+    assert search_products(termo="XZ-999")["total_encontrado"] == 0
+    assert search_products(termo="RG-551")["total_encontrado"] == 0
+
+
+@pytest.mark.parametrize(("plural", "singular"), [("sintetizadores", "sintetizador"), ("profissionais", "profissional")])
+def test_busca_aceita_plural(plural, singular):
+    assert search_products(termo=plural)["total_encontrado"] == search_products(termo=singular)["total_encontrado"] > 0
+
+
+def test_resultado_cortado_avisa_que_ha_mais_itens():
+    assert search_products(categoria="Violões")["truncado"] is True
+    assert search_products(termo="Takamine GD20")["truncado"] is False

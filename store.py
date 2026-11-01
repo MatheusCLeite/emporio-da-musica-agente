@@ -67,12 +67,31 @@ def _tabela(nome: str) -> pd.DataFrame:
 def _raiz(palavra: str) -> str:
     if palavra.endswith("oes"):
         return palavra[:-3] + "ao"
+    if palavra.endswith("ais") and len(palavra) > 4:
+        return palavra[:-2] + "l"
+    if palavra.endswith("res") and len(palavra) > 4:
+        return palavra[:-2]
     return palavra[:-1] if palavra.endswith("s") and len(palavra) > 3 else palavra
 
 
+def _sem_acento(texto: str) -> str:
+    return unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode().lower()
+
+
 def _tokens(texto: str) -> set[str]:
-    sem_acento = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode().lower()
-    return {_raiz(p) for p in re.findall(r"[a-z0-9]+", sem_acento)}
+    return {_raiz(p) for p in re.findall(r"[a-z0-9]+", _sem_acento(texto))}
+
+
+def _compacto(texto: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", _sem_acento(texto))
+
+
+def _casa_com_termo(item: dict, termo: str) -> bool:
+    if _tokens(termo) <= item["_busca"]:
+        return True
+    # Códigos de modelo variam na escrita: GD20, GD-20 e GD 20 são o mesmo produto.
+    compacto = _compacto(termo)
+    return any(c.isdigit() for c in compacto) and compacto in item["_nome_compacto"]
 
 
 def _motivo(produto: dict) -> str | None:
@@ -108,6 +127,7 @@ def _item(p: dict, categoria: str, promo: dict | None) -> dict:
         item["specs"] = json.loads(p["specs"])
         busca = f"{p['name']} {categoria} {p['description']} {' '.join(item['specs'].values())}"
     item["_busca"] = _tokens(busca)
+    item["_nome_compacto"] = _compacto(p["name"])
     return item
 
 
@@ -122,7 +142,7 @@ def _catalogo() -> list[dict]:
 
 
 def _publico(item: dict) -> dict:
-    return {k: v for k, v in item.items() if k != "_busca"}
+    return {k: v for k, v in item.items() if not k.startswith("_")}
 
 
 def _listar(itens: list[dict]) -> list[dict]:
@@ -133,8 +153,7 @@ def search_products(termo=None, categoria=None, preco_min=None, preco_max=None, 
     catalogo = _catalogo()
     achados = catalogo
     if termo:
-        tokens = _tokens(termo)
-        achados = [i for i in achados if tokens <= i["_busca"]]
+        achados = [i for i in achados if _casa_com_termo(i, termo)]
     if categoria:
         achados = [i for i in achados if _tokens(i["categoria"]) == _tokens(categoria)]
     if preco_min is not None:
@@ -160,6 +179,7 @@ def search_products(termo=None, categoria=None, preco_min=None, preco_max=None, 
         "indisponiveis": _listar(indisponiveis),
         "alternativas": [_publico(i) for i in alternativas],
         "total_encontrado": len(disponiveis) + len(indisponiveis),
+        "truncado": max(len(disponiveis), len(indisponiveis)) > LIMITE_RESULTADOS,
     }
 
 

@@ -38,8 +38,9 @@ def buscar_produtos(
 
     Use para qualquer pergunta sobre produto, preço, disponibilidade, recomendação ou promoções vigentes
     (em_promocao=true lista as ativas). termo aceita marca, modelo ou característica.
-    O resultado separa disponiveis, indisponiveis (com motivo) e alternativas.
-    Lista vazia significa que o catálogo não tem o item.
+    O resultado separa disponiveis, indisponiveis (com motivo) e alternativas, do mais barato ao mais caro.
+    Com truncado=true há mais itens: refine a busca, por exemplo com preco_min para ver os mais caros.
+    Com lista vazia, tente de novo com menos palavras antes de dizer que o catálogo não tem o item.
     """
     return _json(search_products(termo, categoria, preco_min, preco_max, em_promocao))
 

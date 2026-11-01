@@ -1,6 +1,7 @@
 """Interface de linha de comando do agente: conversa interativa e geração de transcrições."""
 
 import argparse
+import logging
 import sqlite3
 import sys
 import uuid
@@ -9,10 +10,11 @@ from pathlib import Path
 from dotenv import load_dotenv
 from langgraph.checkpoint.sqlite import SqliteSaver
 
-from agent import ConfigError, build_chain, build_graph, build_models, respond
+from agent import FALLBACK_TEXT, ConfigError, build_chain, build_graph, build_models, respond
 from tools import ALL_TOOLS
 
 CHECKPOINTS = Path("runtime/checkpoints.sqlite")
+logger = logging.getLogger(__name__)
 
 
 def run_chat(graph, thread: str, debug: bool) -> None:
@@ -30,6 +32,11 @@ def run_chat(graph, thread: str, debug: bool) -> None:
         except KeyboardInterrupt:
             print()
             return
+        except Exception:
+            # O cliente nunca vê traceback; o detalhe aparece com --debug.
+            logger.exception("Falha ao responder")
+            print(f"\nAssistente: {FALLBACK_TEXT}")
+            continue
         if debug:
             for f in resposta["ferramentas"]:
                 print(f"[ferramenta] {f['nome']}({f['args']})")
@@ -54,13 +61,14 @@ def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8")
     load_dotenv()
     parser = argparse.ArgumentParser(description="Agente de atendimento da Empório da Música")
-    parser.add_argument("--thread", default="cliente", help="identificador da conversa, para retomá-la depois")
+    parser.add_argument("--thread", help="identificador da conversa, para retomá-la depois; sem ele, a conversa é nova")
     parser.add_argument("--debug", action="store_true", help="mostra ferramentas chamadas e modelo usado")
     parser.add_argument("--replay", type=Path, help="arquivo com uma mensagem do cliente por linha")
     parser.add_argument("--out", type=Path, help="arquivo Markdown de saída do --replay")
     args = parser.parse_args()
     if args.replay and not args.out:
         parser.error("--replay exige --out")
+    logging.basicConfig(level=logging.WARNING if args.debug else logging.CRITICAL)
 
     try:
         chain = build_chain(build_models(ALL_TOOLS))
@@ -74,9 +82,10 @@ def main() -> int:
         graph = build_graph(chain, SqliteSaver(conexao))
         if args.replay:
             # Thread novo a cada captura, para o exemplo não herdar conversa anterior.
-            run_replay(graph, f"{args.thread}-{uuid.uuid4().hex[:8]}", args.replay, args.out)
+            run_replay(graph, f"{args.thread or 'exemplo'}-{uuid.uuid4().hex[:8]}", args.replay, args.out)
         else:
-            run_chat(graph, args.thread, args.debug)
+            # Conversa nova por padrão: um thread guarda o contato e o pedido verificado de um único cliente.
+            run_chat(graph, args.thread or f"cliente-{uuid.uuid4().hex[:8]}", args.debug)
     finally:
         conexao.close()
     return 0
