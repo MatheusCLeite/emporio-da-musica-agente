@@ -1,12 +1,14 @@
 """Grafo LangGraph do agente e cadeia de modelos com fallback."""
 
 import os
+import warnings
 
+import httpx
 import openai
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import Runnable
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_google_genai.chat_models import ChatGoogleGenerativeAIError
+from langchain_google_genai.chat_models import ChatGoogleGenerativeAIError, GoogleAPIError
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
@@ -15,15 +17,19 @@ from prompts import system_message
 from store import agora
 from tools import ALL_TOOLS
 
+# gemini-3.5-flash-lite ignora a temperatura; o aviso só atrapalharia a conversa no terminal.
+warnings.filterwarnings("ignore", message=".*uses fixed sampling defaults.*")
+
 FALLBACK_TEXT = (
     "Poxa, tive um problema técnico e não consegui responder agora. "
     "Tenta de novo em instantes ou fala com a equipe pelo WhatsApp (67) 3321-4500."
 )
 GROQ_URL = "https://api.groq.com/openai/v1"
+TIMEOUT_SEGUNDOS = 30
 MAX_RODADAS_DE_FERRAMENTAS = 4
 RECURSION_LIMIT = 2 * MAX_RODADAS_DE_FERRAMENTAS + 2
 # Só falhas de API acionam o modelo reserva; erro de programação deve aparecer.
-API_ERRORS = (ChatGoogleGenerativeAIError, openai.APIError)
+API_ERRORS = (ChatGoogleGenerativeAIError, GoogleAPIError, openai.APIError, httpx.TransportError)
 
 
 class ConfigError(Exception):
@@ -38,14 +44,24 @@ def build_models(tools, env=os.environ) -> list[Runnable]:
         env.get("GEMINI_MODEL") or "gemini-3.8-flash",
         env.get("GEMINI_FALLBACK_MODEL") or "gemini-3.5-flash-lite",
     )
-    modelos = [ChatGoogleGenerativeAI(model=n, google_api_key=chave, temperature=0.2, max_retries=1) for n in nomes]
+    modelos = [
+        ChatGoogleGenerativeAI(model=n, google_api_key=chave, temperature=0.2, max_retries=1, timeout=TIMEOUT_SEGUNDOS)
+        for n in nomes
+    ]
     if env.get("GROQ_API_KEY"):
         nomes_groq = (
             env.get("GROQ_MODEL") or "openai/gpt-oss-120b",
-            env.get("GROQ_FALLBACK_MODEL") or "llama-3.3-70b-versatile",
+            env.get("GROQ_FALLBACK_MODEL") or "openai/gpt-oss-20b",
         )
         modelos += [
-            ChatOpenAI(model=n, api_key=env["GROQ_API_KEY"], base_url=GROQ_URL, temperature=0.2, max_retries=1)
+            ChatOpenAI(
+                model=n,
+                api_key=env["GROQ_API_KEY"],
+                base_url=GROQ_URL,
+                temperature=0.2,
+                max_retries=1,
+                timeout=TIMEOUT_SEGUNDOS,
+            )
             for n in nomes_groq
         ]
     return [m.bind_tools(tools) for m in modelos]

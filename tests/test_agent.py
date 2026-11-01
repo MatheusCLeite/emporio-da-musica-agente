@@ -2,15 +2,16 @@ import io
 import sqlite3
 from datetime import datetime
 
+import httpx
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableLambda
-from langchain_google_genai.chat_models import ChatGoogleGenerativeAIError
+from langchain_google_genai.chat_models import ChatGoogleGenerativeAIError, GoogleAPIError
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.sqlite import SqliteSaver
 
 import cli
-from agent import FALLBACK_TEXT, ConfigError, build_chain, build_graph, build_models, message_text, respond
+from agent import FALLBACK_TEXT, TIMEOUT_SEGUNDOS, ConfigError, build_chain, build_graph, build_models, message_text, respond
 from prompts import system_message
 from store import TZ
 from tools import ALL_TOOLS
@@ -56,6 +57,23 @@ def test_sistema_atualizado_a_cada_chamada_e_fora_do_estado():
 def test_fallback_em_erro_de_api():
     reserva = modelo_em_sequencia(AIMessage(content="ok do reserva"))
     r = respond(build_graph(build_chain([modelo_429(), reserva]), MemorySaver()), "t", "oi")
+    assert r["texto"] == "ok do reserva"
+
+
+@pytest.mark.parametrize(
+    "erro",
+    [
+        GoogleAPIError(503, {"error": {"code": 503, "message": "high demand", "status": "UNAVAILABLE"}}),
+        httpx.ConnectTimeout("timeout"),
+    ],
+    ids=["gemini_503", "timeout_de_rede"],
+)
+def test_erro_de_servidor_ou_rede_aciona_reserva(erro):
+    def falhar(_):
+        raise erro
+
+    reserva = modelo_em_sequencia(AIMessage(content="ok do reserva"))
+    r = respond(build_graph(build_chain([RunnableLambda(falhar), reserva]), MemorySaver()), "t", "oi")
     assert r["texto"] == "ok do reserva"
 
 
@@ -124,8 +142,14 @@ def test_build_models_exige_chave_gemini():
 def test_build_models_acrescenta_groq_depois_dos_gemini():
     modelos = build_models(ALL_TOOLS, {"GOOGLE_API_KEY": "x", "GROQ_API_KEY": "y"})
     groq = [m.bound for m in modelos[2:]]
-    assert [m.model_name for m in groq] == ["openai/gpt-oss-120b", "llama-3.3-70b-versatile"]
+    assert [m.model_name for m in groq] == ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]
     assert {m.openai_api_base for m in groq} == {"https://api.groq.com/openai/v1"}
+
+
+def test_todos_os_modelos_tem_timeout():
+    modelos = build_models(ALL_TOOLS, {"GOOGLE_API_KEY": "x", "GROQ_API_KEY": "y"})
+    assert [m.bound.timeout for m in modelos[:2]] == [TIMEOUT_SEGUNDOS] * 2
+    assert [m.bound.request_timeout for m in modelos[2:]] == [TIMEOUT_SEGUNDOS] * 2
 
 
 def test_build_models_aceita_trocar_modelos_groq():
