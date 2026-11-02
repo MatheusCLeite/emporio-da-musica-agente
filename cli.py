@@ -13,7 +13,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from agent import FALLBACK_TEXT, ConfigError, build_chain, build_graph, build_models, respond
 from tools import ALL_TOOLS
 
-CHECKPOINTS = Path("runtime/checkpoints.sqlite")
+CHECKPOINTS = Path(__file__).resolve().parent / "runtime" / "checkpoints.sqlite"
 logger = logging.getLogger(__name__)
 
 
@@ -68,6 +68,8 @@ def main() -> int:
     args = parser.parse_args()
     if args.replay and not args.out:
         parser.error("--replay exige --out")
+    if args.replay and not args.replay.is_file():
+        parser.error(f"arquivo não encontrado: {args.replay}")
     logging.basicConfig(level=logging.WARNING if args.debug else logging.CRITICAL)
 
     try:

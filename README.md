@@ -82,6 +82,8 @@ Se todos falharem, o cliente recebe uma mensagem amigável, a conversa continua 
 
 - **Contatos:** telefone (67) 3341-4444, WhatsApp (67) 3321-4500 (§7) e e-mail `contato@emporiodamusica.com.br` (capa, sem acento, por ser um domínio mais plausível). O manual traz versões conflitantes.
 - **Parcela mínima:** o §3.1 prevalece sobre a tabela, por ser mais específico: R$ 50 até 3x, R$ 80 de 4x a 6x, R$ 100 de 7x a 12x.
+- **Arredondamento do PIX:** 5% sobre o preço de tabela. Valor com até dois decimais não muda, e qualquer fração além do centavo sobe para o centavo seguinte: 41,15 fica 41,15 e 41,152 vira 41,16.
+- **Busca por categoria:** se o termo nomeia uma categoria da planilha, só produtos dela aparecem, mesmo que a descrição de outro cite a palavra.
 - **Catálogo:** o manual cita mais de 300 instrumentos, e o CSV tem 65. Vale o CSV. Sopro e cordas orquestrais têm 0 produtos, e o agente diz que não há itens disponíveis no momento.
 - **Promoções:** vale só `is_active = 1`. O CSV prevalece sobre o calendário do manual, inclusive para a Black Friday em novembro. Hoje há 4 promoções ativas, nenhuma de Black Friday.
 - **Disponibilidade:** `status = active` e estoque maior que zero. `coming_soon` e `discontinued` nunca são vendáveis, mesmo com estoque.

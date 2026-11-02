@@ -2,6 +2,7 @@ import io
 import json
 import sqlite3
 from datetime import datetime
+from pathlib import Path
 
 import httpx
 import pytest
@@ -16,7 +17,7 @@ import cli
 from agent import FALLBACK_TEXT, TIMEOUT_SEGUNDOS, ConfigError, build_chain, build_graph, build_models, message_text, respond
 from prompts import system_message
 from store import TZ
-from tools import ALL_TOOLS
+from tools import ALL_TOOLS, HANDOFF_PATH
 
 
 def chamada(nome="consultar_politicas", args=None, id_="c1"):
@@ -237,3 +238,16 @@ def test_cli_replay_gera_transcricao(tmp_path):
 def test_cli_interativa_sai_limpo_em_eof(monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO(""))
     cli.run_chat(build_graph(modelo_em_sequencia(), MemorySaver()), "t", debug=False)
+
+
+def test_replay_com_arquivo_inexistente_da_erro_claro(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr("sys.argv", ["cli.py", "--replay", str(tmp_path / "nao-existe.txt"), "--out", "s.md"])
+    with pytest.raises(SystemExit) as saida:
+        cli.main()
+    assert saida.value.code == 2 and "nao-existe.txt" in capsys.readouterr().err
+
+
+def test_dados_de_execucao_ficam_no_projeto_em_qualquer_diretorio():
+    pasta = Path(cli.__file__).resolve().parent / "runtime"
+    assert cli.CHECKPOINTS.parent == pasta
+    assert HANDOFF_PATH.parent == pasta

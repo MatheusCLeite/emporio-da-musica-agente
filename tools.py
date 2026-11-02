@@ -12,7 +12,7 @@ from langchain_core.tools import tool
 from policies import TEMAS, get_policy
 from store import CATEGORIAS, agora, find_order, search_products
 
-HANDOFF_PATH = Path("runtime/handoffs.jsonl")
+HANDOFF_PATH = Path(__file__).resolve().parent / "runtime" / "handoffs.jsonl"
 PEDIDO_NAO_VERIFICADO = {
     "verificado": False,
     "mensagem": "Não foi possível localizar um pedido com esse número e esse contato.",

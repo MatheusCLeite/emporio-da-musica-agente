@@ -1,8 +1,9 @@
 from datetime import date, datetime
+from decimal import Decimal
 
 import pytest
 
-from store import TZ, find_order, max_parcelas, search_products, status_loja
+from store import TZ, centavo_acima, find_order, max_parcelas, search_products, status_loja
 
 
 def ids(items):
@@ -154,3 +155,40 @@ def test_condicoes_com_promocao_traz_original_desconto_e_sem_pix():
 def test_item_indisponivel_nao_traz_condicoes_de_compra():
     item = _um("Giannini GF-3D")["indisponiveis"][0]
     assert "condicoes" not in item
+
+
+@pytest.mark.parametrize(
+    ("valor", "esperado"),
+    [("41.15", 41.15), ("41.152", 41.16), ("408.405", 408.41), ("41.1", 41.1), ("2089.05", 2089.05)],
+)
+def test_arredonda_so_a_partir_do_centavo_e_para_cima(valor, esperado):
+    assert centavo_acima(Decimal(valor)) == esperado
+
+
+@pytest.mark.parametrize(
+    ("termo", "pix"),
+    [("Tagima Memphis AC-39", 408.41), ("Yamaha C40", 569.91), ("Takamine GD20", 2089.05)],
+)
+def test_pix_usa_a_regra_do_centavo(termo, pix):
+    assert search_products(termo=termo)["disponiveis"][0]["preco_pix"] == pix
+
+
+def test_termo_que_nomeia_categoria_nao_traz_produto_de_outra():
+    resultado = search_products(termo="violão")
+    categorias = {i["categoria"] for i in resultado["disponiveis"] + resultado["indisponiveis"]}
+    assert categorias == {"Violões"}
+    assert "Kala KA-B Barítono Mogno" not in str(resultado)
+
+
+def test_termo_sem_categoria_continua_buscando_na_descricao():
+    assert "Kala KA-B Barítono Mogno" in str(search_products(termo="mogno"))
+    assert search_products(termo="7 cordas")["total_encontrado"] >= 1
+
+
+@pytest.mark.parametrize("contato", ["067 99654-7821", "+55 067 99654-7821", "0055 67 99654-7821"])
+def test_telefone_com_zero_de_tronco_confere(contato):
+    assert find_order("8", contato, date(2026, 11, 3)) is not None
+
+
+def test_contato_so_com_zeros_nunca_confere():
+    assert find_order("8", "000", date(2026, 11, 3)) is None

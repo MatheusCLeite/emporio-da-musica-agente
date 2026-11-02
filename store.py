@@ -5,6 +5,7 @@ import os
 import re
 import unicodedata
 from datetime import date, datetime, timedelta
+from decimal import ROUND_CEILING, Decimal
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -64,6 +65,25 @@ def _tabela(nome: str) -> pd.DataFrame:
     return pd.read_csv(DATA_DIR / f"desafio_tecnico_ai_eng - {nome}.csv", encoding="utf-8")
 
 
+# Palavra na busca que nomeia uma categoria restringe o resultado a ela: "violão" na descrição de um ukulele não o torna violão.
+# Lista fixa porque "instrumentos", "cordas" ou "madeira" também aparecem em buscas sobre outras categorias.
+CATEGORIA_DA_PALAVRA = {
+    "violao": "Violões",
+    "guitarra": "Guitarras",
+    "baixo": "Baixos",
+    "bateria": "Baterias e Percussão",
+    "percussao": "Baterias e Percussão",
+    "teclado": "Teclados e Pianos",
+    "piano": "Teclados e Pianos",
+    "ukulele": "Ukuleles",
+}
+
+
+def centavo_acima(valor: Decimal) -> float:
+    """Só frações além do centavo sobem: 41,15 fica igual e 41,152 vira 41,16."""
+    return float(valor.quantize(Decimal("0.01"), ROUND_CEILING))
+
+
 def _raiz(palavra: str) -> str:
     if palavra.endswith("oes"):
         return palavra[:-3] + "ao"
@@ -88,6 +108,9 @@ def _compacto(texto: str) -> str:
 
 def _casa_com_termo(item: dict, termo: str) -> bool:
     tokens = _tokens(termo)
+    nomeadas = {CATEGORIA_DA_PALAVRA[t] for t in tokens if t in CATEGORIA_DA_PALAVRA}
+    if nomeadas and item["categoria"] not in nomeadas:
+        return False
     if tokens and tokens <= item["_busca"]:
         return True
     # Códigos de modelo variam na escrita: GD20, GD-20 e GD 20 são o mesmo produto.
@@ -128,7 +151,7 @@ def _item(p: dict, categoria: str, promo: dict | None) -> dict:
         "promocao": promo["description"] if promo else None,
         "desconto_percentual": desconto,
         "preco_final": final,
-        "preco_pix": None if promo else round(tabela * 0.95, 2),
+        "preco_pix": None if promo else centavo_acima(Decimal(str(tabela)) * Decimal("0.95")),
         "max_parcelas": max_parcelas(final),
         "estoque": int(p["stock_quantity"]),
     }
@@ -202,8 +225,8 @@ def search_products(termo=None, categoria=None, preco_min=None, preco_max=None, 
 
 
 def _digitos(texto: str) -> str:
-    digitos = re.sub(r"\D", "", texto)
-    return digitos[2:] if len(digitos) > 11 and digitos.startswith("55") else digitos
+    digitos = re.sub(r"\D", "", texto).lstrip("0")
+    return digitos[2:].lstrip("0") if len(digitos) > 11 and digitos.startswith("55") else digitos
 
 
 def _contato_confere(contato: str, cliente: dict) -> bool:
