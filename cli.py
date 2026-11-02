@@ -16,10 +16,12 @@ from tools import ALL_TOOLS
 
 CHECKPOINTS = Path(__file__).resolve().parent / "runtime" / "checkpoints.sqlite"
 logger = logging.getLogger(__name__)
+SAUDACAO = "Oi! Aqui é o assistente virtual da Empório da Música. Sua música começa aqui! Como posso te ajudar?"
 
 
 def run_chat(graph, thread: str, debug: bool) -> None:
-    print("Empório da Música. Sua música começa aqui. (Ctrl+C para sair)")
+    print("(Ctrl+C para sair)")
+    print(f"\nAssistente: {SAUDACAO}")
     while True:
         try:
             texto = input("\nVocê: ").strip()
@@ -46,7 +48,7 @@ def run_chat(graph, thread: str, debug: bool) -> None:
 
 
 def run_replay(graph, thread: str, entrada: Path, saida: Path) -> None:
-    blocos = [f"# Conversa: {entrada.stem}"]
+    blocos = [f"# Conversa: {entrada.stem}", f"**Assistente:** {SAUDACAO}"]
     for linha in entrada.read_text(encoding="utf-8").splitlines():
         if not linha.strip():
             continue

@@ -275,3 +275,18 @@ def test_cli_envia_traces_pendentes_antes_de_sair(tmp_path, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("oi\n"))
     assert cli.main() == 0
     assert chamadas == [True]
+
+
+def test_conversa_interativa_abre_com_saudacao(monkeypatch, capsys):
+    monkeypatch.setattr("sys.stdin", io.StringIO(""))
+    cli.run_chat(build_graph(modelo_em_sequencia(), MemorySaver()), "t", debug=False)
+    assert cli.SAUDACAO in capsys.readouterr().out
+
+
+def test_transcricao_abre_com_saudacao(tmp_path):
+    entrada = tmp_path / "e.txt"
+    entrada.write_text("oi\n", encoding="utf-8")
+    saida = tmp_path / "s.md"
+    cli.run_replay(build_graph(modelo_em_sequencia(AIMessage(content="ok")), MemorySaver()), "t", entrada, saida)
+    texto = saida.read_text(encoding="utf-8")
+    assert texto.index(cli.SAUDACAO) < texto.index("**Cliente:** oi")

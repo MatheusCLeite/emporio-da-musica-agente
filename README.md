@@ -77,6 +77,12 @@ O modelo decide o que consultar e como comunicar. Fatos e contas ficam em códig
 
 **Políticas por seção, sem banco vetorial.** São 8 páginas com seções bem delimitadas. Um tema escolhido em lista fechada devolve o trecho exato, sem infraestrutura de embeddings e sem risco de recuperar o parágrafo errado.
 
+**Gemini como provedor.** Tem chamada de ferramentas nativa, camada gratuita suficiente para um protótipo e integração direta com o LangGraph. Os modelos ficam em variáveis de ambiente, então trocá-los não exige mudar código.
+
+**Estratégia de prompt.** A mensagem de sistema traz persona e regras por situação, derivadas do §7 do manual, mas nenhum dado da loja: preços, estoque e políticas vêm sempre das ferramentas. As descrições das ferramentas dizem ao modelo quando usar cada uma. O prompt trata mensagens do cliente e resultados de ferramentas como dados, nunca como instruções, e foi ajustado com execuções reais. Quando a regra precisa valer sempre, ela sai do prompt e vai para o código, como aconteceu com a frase de pagamento.
+
+**Tratamento dos dados.** Os CSVs são lidos a cada consulta, então uma edição vale na hora. A busca ignora acentos, maiúsculas e plural, e aceita código de modelo escrito de formas diferentes. O manual é extraído por seção, sem cabeçalhos e rodapés, e as contradições são corrigidas antes de chegar ao modelo, conforme as suposições abaixo.
+
 **Cadeia de modelos.** Cada modelo só é acionado se o anterior falhar por erro de API (qualquer 4xx ou 5xx, rede, timeout de 30 s ou resposta malformada), nunca por qualidade de resposta:
 
 1. `gemini-3.5-flash-lite`: principal, pela cota diária maior na camada gratuita.
@@ -107,6 +113,7 @@ Se todos falharem, o cliente recebe uma mensagem amigável, a conversa continua 
 - **Frete de exatamente R$ 500:** o manual não define o caso, então o agente encaminha.
 - **Lojas parceiras:** não há lista, então o agente sugere procurar uma loja especializada, sem citar nomes.
 - **Feriados:** não há calendário. O status "aberta" considera só dia da semana e horário.
+- **Defeito depois de 30 dias:** o §4.2 manda acionar o fabricante, e o §8.1 dá garantia legal de 90 dias a partir do recebimento. O agente informa as duas coisas e oferece encaminhar.
 - **Identidade:** número do pedido + telefone ou e-mail, pois o CSV não tem CPF.
 
 ## Conflitos no catálogo
@@ -118,7 +125,7 @@ O agente continua informando nome, preço e estoque, mas a descrição e as spec
 ## Limitações conhecidas
 
 - **Cota gratuita:** cada mensagem que usa ferramenta gasta ao menos duas requisições, e os limites gratuitos são baixos: o `gemini-3.8-flash` tem só 20 por dia. Por isso ele é reserva, não principal. Cada turno dos exemplos mostra o modelo que respondeu.
-- **Latência:** em condições normais, as respostas levaram de 3 a 5 s. Com o Gemini sobrecarregado, uma chegou a 86 s, porque o tempo de espera e as tentativas de cada modelo se somam antes da troca.
+- **Latência:** nos testes, as respostas variaram de 3 s a 86 s. A camada gratuita oscila bastante, e com o Gemini sobrecarregado o tempo de espera e as tentativas de cada modelo se somam antes da troca.
 - **Variação entre execuções:** a mesma pergunta pode gerar respostas diferentes. Regras no prompt reduzem esse risco, mas só o que está em código é garantido. Modelos reserva podem seguir pior o prompt.
 - **Encaminhamento simulado:** `registrar_encaminhamento` grava em `runtime/handoffs.jsonl` e devolve um protocolo; não há equipe recebendo.
 - **Identidade simplificada:** quem souber número do pedido e contato vê o pedido.

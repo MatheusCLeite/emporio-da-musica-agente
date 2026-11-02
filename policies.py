@@ -27,6 +27,11 @@ CORRECOES = [
     (r"contato@empóriodamusica\.com\.br", "contato@emporiodamusica.com.br"),
     (r"Parcela mínima de R\$ 100,00", "Parcela mínima conforme as regras abaixo"),
     (r"sem valor mínimo de parcela \(exceto abaixo de R\$\s+50,00\)", "parcela mínima de R$ 50,00"),
+    # O §4.2 sozinho faria o agente omitir a garantia legal do §8.1, que muitas vezes ainda vale depois dos 30 dias.
+    (
+        r"(da Música pode intermediar o processo mediante solicitação\.)",
+        r"\1 Até 90 dias do recebimento, informe também a garantia legal contra defeitos de fabricação.",
+    ),
     # O calendário descreve campanhas passadas e futuras; lido sozinho, vira promessa de desconto que o catálogo não tem.
     (
         r"6\.1 Tipos de Promoção",

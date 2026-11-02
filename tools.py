@@ -22,6 +22,11 @@ Categoria = Literal[tuple(CATEGORIAS)]
 Tema = Literal[tuple(TEMAS)]
 
 
+def _contato_valido(contato: str) -> bool:
+    # O modelo já tentou registrar "Não informado pelo usuário": protocolo sem contato é promessa que ninguém cumpre.
+    return len(re.sub(r"\D", "", contato)) >= 10 or bool(re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", contato.strip()))
+
+
 def _json(dados: dict) -> str:
     return json.dumps(dados, ensure_ascii=False)
 
@@ -92,6 +97,8 @@ def registrar_encaminhamento(motivo: str, resumo: str, contato: str) -> str:
     Use em reclamações, pedido com previsão vencida, frete especial ou quando não houver dado para responder.
     Só use depois de o cliente informar um contato e concordar com o encaminhamento.
     """
+    if not _contato_valido(contato):
+        return _json({"erro": "Peça ao cliente um telefone com DDD ou e-mail antes de encaminhar."})
     momento = agora()
     protocolo = f"EM-{momento:%Y%m%d}-{uuid.uuid4().hex[:4].upper()}"
     HANDOFF_PATH.parent.mkdir(parents=True, exist_ok=True)

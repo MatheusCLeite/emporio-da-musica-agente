@@ -30,6 +30,10 @@ def test_calendario_de_promocoes_avisa_que_nao_indica_promocao_ativa():
     assert texto.index("em_promocao=true") < texto.index("Black Friday")
 
 
+def test_troca_por_defeito_lembra_a_garantia_legal():
+    assert "garantia legal" in get_policy("trocas_devolucoes")
+
+
 def test_tema_invalido():
     with pytest.raises(KeyError):
         get_policy("astrologia")

@@ -32,7 +32,7 @@ def test_data_invalida_ou_futura(monkeypatch, data):
 def test_encaminhamento_grava_e_devolve_protocolo(tmp_path, monkeypatch):
     path = tmp_path / "h.jsonl"
     monkeypatch.setattr(tools, "HANDOFF_PATH", path)
-    r = json.loads(registrar_encaminhamento.invoke({"motivo": "reclamacao", "resumo": "x", "contato": "y"}))
+    r = json.loads(registrar_encaminhamento.invoke({"motivo": "reclamacao", "resumo": "x", "contato": "(67) 99888-7777"}))
     assert r["protocolo"] and json.loads(path.read_text(encoding="utf-8"))["protocolo"] == r["protocolo"]
     assert "24 horas úteis" in r["prazo_retorno"]
 
@@ -58,3 +58,18 @@ def test_lista_de_ferramentas_completa():
         "dias_corridos_desde",
         "registrar_encaminhamento",
     }
+
+
+@pytest.mark.parametrize("contato", ["Não informado pelo usuário", "", "99999", "desconhecido"])
+def test_encaminhamento_sem_contato_real_nao_gera_protocolo(contato, tmp_path, monkeypatch):
+    monkeypatch.setattr(tools, "HANDOFF_PATH", tmp_path / "h.jsonl")
+    resposta = json.loads(registrar_encaminhamento.invoke({"motivo": "m", "resumo": "r", "contato": contato}))
+    assert "protocolo" not in resposta and "erro" in resposta
+    assert not (tmp_path / "h.jsonl").exists()
+
+
+@pytest.mark.parametrize("contato", ["(67) 99888-7777", "ana@exemplo.com"])
+def test_encaminhamento_com_telefone_ou_email_gera_protocolo(contato, tmp_path, monkeypatch):
+    monkeypatch.setattr(tools, "HANDOFF_PATH", tmp_path / "h.jsonl")
+    resposta = json.loads(registrar_encaminhamento.invoke({"motivo": "m", "resumo": "r", "contato": contato}))
+    assert resposta["protocolo"].startswith("EM-")
