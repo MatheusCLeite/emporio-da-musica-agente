@@ -101,6 +101,21 @@ def _motivo(produto: dict) -> str | None:
     return None if produto["stock_quantity"] > 0 else "sem_estoque"
 
 
+def _brl(valor: float) -> str:
+    return "R$ " + f"{valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _condicoes(item: dict) -> str:
+    """Frase pronta de preço e pagamento: em código, a ordem e os valores não dependem do modelo."""
+    parcelas = f"em até {item['max_parcelas']}x sem juros no cartão"
+    if item["desconto_percentual"] is None:
+        return f"{_brl(item['preco_final'])} {parcelas} ou {_brl(item['preco_pix'])} no PIX"
+    return (
+        f"{_brl(item['preco_final'])} (de {_brl(item['preco_tabela'])}, com {item['desconto_percentual']}% de desconto), "
+        f"{parcelas}, sem desconto adicional no PIX"
+    )
+
+
 def _item(p: dict, categoria: str, promo: dict | None) -> dict:
     tabela = float(p["price_brl"])
     desconto = int(promo["discount_percent"]) if promo else None
@@ -120,6 +135,8 @@ def _item(p: dict, categoria: str, promo: dict | None) -> dict:
     motivo = _motivo(p)
     if motivo:
         item["motivo"] = motivo
+    else:
+        item["condicoes"] = _condicoes(item)
     if item["id"] in CONFLITO_CATALOGO:
         item["ficha_tecnica_indisponivel"] = True
         busca = f"{p['name']} {categoria}"

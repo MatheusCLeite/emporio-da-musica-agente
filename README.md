@@ -57,7 +57,7 @@ O modelo decide o que consultar e como comunicar. Fatos e contas ficam em códig
 
 ## Decisões técnicas
 
-**Fatos em código, não no modelo.** O manual proíbe informar preço, estoque ou prazo sem consultar o sistema, e um valor errado pode configurar propaganda enganosa. Por isso, preço final, PIX, parcelas, disponibilidade e contagem de dias são calculados em Python.
+**Fatos em código, não no modelo.** O manual proíbe informar preço, estoque ou prazo sem consultar o sistema, e um valor errado pode configurar propaganda enganosa. Por isso, preço final, PIX, parcelas, disponibilidade e contagem de dias são calculados em Python. A frase de pagamento também sai pronta da ferramenta, no campo `condicoes`, para o modelo não sugerir, por exemplo, que o valor do PIX pode ser parcelado.
 
 **LangGraph.** O problema é um laço simples de agente com ferramentas, e o framework já traz esse laço, tratamento de erro de ferramenta e histórico persistente. Um único nó de agente basta; mais agentes só acrescentariam custo e pontos de falha.
 

@@ -34,3 +34,9 @@ def test_modelo_escolhe_a_ferramenta_certa(pergunta, ferramenta):
     chamadas = [f["nome"] for f in resposta["ferramentas"]]
     assert ferramenta in chamadas if ferramenta else not chamadas
     assert "Paris" not in resposta["texto"]
+
+
+def test_modelo_copia_as_condicoes_de_pagamento():
+    graph = build_graph(build_chain(build_models(ALL_TOOLS)), MemorySaver())
+    texto = respond(graph, "live", "Vocês têm bateria?")["texto"]
+    assert "R$ 4.439,00 em até 12x sem juros no cartão ou R$ 4.217,05 no PIX" in texto

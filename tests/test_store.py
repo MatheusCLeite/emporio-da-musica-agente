@@ -135,3 +135,22 @@ def test_resultado_cortado_avisa_que_ha_mais_itens():
 @pytest.mark.parametrize("termo", ["🎸", "---", "吉他"])
 def test_termo_sem_letras_nem_numeros_nao_devolve_o_catalogo(termo):
     assert search_products(termo=termo)["total_encontrado"] == 0
+
+
+def _um(termo):
+    return search_products(termo=termo)
+
+
+def test_condicoes_sem_promocao_traz_parcelas_e_depois_pix():
+    item = _um("Bateria Acustica Yamaha Kit 1")["disponiveis"][0]
+    assert item["condicoes"] == "R$ 4.439,00 em até 12x sem juros no cartão ou R$ 4.217,05 no PIX"
+
+
+def test_condicoes_com_promocao_traz_original_desconto_e_sem_pix():
+    item = _um("Ohana CK-20")["disponiveis"][0]
+    assert item["condicoes"] == "R$ 439,20 (de R$ 549,00, com 20% de desconto), em até 5x sem juros no cartão, sem desconto adicional no PIX"
+
+
+def test_item_indisponivel_nao_traz_condicoes_de_compra():
+    item = _um("Giannini GF-3D")["indisponiveis"][0]
+    assert "condicoes" not in item
