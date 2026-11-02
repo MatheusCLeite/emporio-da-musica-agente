@@ -192,3 +192,22 @@ def test_telefone_com_zero_de_tronco_confere(contato):
 
 def test_contato_so_com_zeros_nunca_confere():
     assert find_order("8", "000", date(2026, 11, 3)) is None
+
+
+def test_pedido_informa_a_data_da_compra():
+    assert find_order("5", "(67) 98765-4321", date(2026, 1, 26))["data_compra"] == "2026-01-05"
+
+
+def test_busca_informa_as_campanhas_ativas():
+    assert search_products(termo="Takamine GD20")["campanhas_ativas"] == ["Desconto Exclusivo", "Oferta Especial"]
+
+
+def test_pedido_entregue_nao_expoe_previsao_como_data_de_recebimento():
+    pedido = find_order("5", "(67) 98765-4321", date(2026, 1, 26))
+    assert pedido["previsao"] is None
+    assert pedido["data_recebimento"] == "não registrada; pergunte ao cliente"
+
+
+def test_pedido_em_transito_mantem_a_previsao():
+    pedido = find_order("8", "(67) 99654-7821", date(2026, 11, 3))
+    assert pedido["previsao"] == "2026-02-28" and "data_recebimento" not in pedido

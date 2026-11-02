@@ -221,6 +221,7 @@ def search_products(termo=None, categoria=None, preco_min=None, preco_max=None, 
         "alternativas": [_publico(i) for i in alternativas],
         "total_encontrado": len(disponiveis) + len(indisponiveis),
         "truncado": max(len(disponiveis), len(indisponiveis)) > LIMITE_RESULTADOS,
+        "campanhas_ativas": sorted({i["promocao"] for i in catalogo if i["promocao"]}),
     }
 
 
@@ -256,11 +257,14 @@ def find_order(numero: str, contato: str, hoje: date) -> dict | None:
     itens = _tabela("order_items")
     produtos = _tabela("products")
     nomes = dict(zip(produtos.product_id, produtos.name))
-    previsao = _opcional(pedido["estimated_delivery"])
+    # Em pedido entregue, a previsão passada pelo modelo como data de recebimento faria o prazo de devolução dar errado.
+    entregue = pedido["status"] == "delivered"
+    previsao = None if entregue else _opcional(pedido["estimated_delivery"])
     return {
         "numero": int(numero),
         "cliente_primeiro_nome": cliente["name"].split()[0],
         "status": pedido["status"],
+        "data_compra": pedido["order_date"],
         "itens": [
             {"nome": nomes[i.product_id], "quantidade": int(i.quantity)}
             for i in itens[itens.order_id == int(numero)].itertuples()
@@ -271,4 +275,5 @@ def find_order(numero: str, contato: str, hoje: date) -> dict | None:
         "previsao": previsao,
         "previsao_vencida": bool(pedido["status"] == "shipped" and previsao and date.fromisoformat(previsao) < hoje),
         "observacoes": _opcional(pedido["notes"]),
+        **({"data_recebimento": "não registrada; pergunte ao cliente"} if entregue else {}),
     }
