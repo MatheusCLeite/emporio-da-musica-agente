@@ -8,6 +8,7 @@ import uuid
 from pathlib import Path
 
 from dotenv import load_dotenv
+from langchain_core.tracers.langchain import wait_for_all_tracers
 from langgraph.checkpoint.sqlite import SqliteSaver
 
 from agent import FALLBACK_TEXT, ConfigError, build_chain, build_graph, build_models, respond
@@ -90,6 +91,7 @@ def main() -> int:
             run_chat(graph, args.thread or f"cliente-{uuid.uuid4().hex[:8]}", args.debug)
     finally:
         conexao.close()
+        wait_for_all_tracers()  # o envio ao LangSmith roda em segundo plano e morreria com o processo
     return 0
 
 

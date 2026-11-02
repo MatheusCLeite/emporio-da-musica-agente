@@ -31,6 +31,18 @@ Sem `--thread`, cada execução começa uma conversa nova. Um thread guarda o co
 
 `AGENT_NOW` fixa data e hora, por exemplo `AGENT_NOW=2026-11-03T10:00:00`. Serve para reproduzir os exemplos em horário comercial.
 
+### Tracing com LangSmith (opcional)
+
+Para ver cada turno com chamadas de modelo, ferramentas, trocas de modelo e erros, crie uma chave em [smith.langchain.com](https://smith.langchain.com) e preencha o `.env`:
+
+```bash
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY=sua_chave
+LANGSMITH_PROJECT=emporio-da-musica
+```
+
+Os turnos de um mesmo `--thread` ficam agrupados em uma conversa. Conta na UE também precisa de `LANGSMITH_ENDPOINT=https://eu.api.smith.langchain.com`. Com o tracing ligado, as conversas vão para um serviço externo, inclusive contatos e pedidos; `LANGSMITH_HIDE_INPUTS=true` e `LANGSMITH_HIDE_OUTPUTS=true` ocultam esse conteúdo. Os testes nunca enviam traces.
+
 ### Testes
 
 ```bash
@@ -76,6 +88,8 @@ Se todos falharem, o cliente recebe uma mensagem amigável, a conversa continua 
 
 **Histórico em SQLite por `thread_id`.** Sobrevive ao fechamento do programa e não exige servidor. A mensagem de sistema fica fora do histórico e é remontada a cada chamada, para a data e o status da loja estarem sempre corretos.
 
+**Tracing opcional.** O LangGraph já integra com o LangSmith por variáveis de ambiente, então não há código de instrumentação. Fica desligado por padrão porque envia dados de clientes para fora.
+
 **CLI.** O desafio pede um agente por texto. A CLI mantém o foco no comportamento, e `--replay` gera os exemplos a partir de execuções reais.
 
 ## Suposições
@@ -119,7 +133,7 @@ O agente continua informando nome, preço e estoque, mas a descrição e as spec
 - Banco de dados real no lugar dos CSVs, com correção dos conflitos na origem.
 - Cálculo de vários produtos e calendário de feriados.
 - Corte ou resumo de histórico longo.
-- Observabilidade de custo, latência e taxa de fallback.
+- Painéis e alertas de custo, latência e taxa de fallback sobre os traces.
 
 ## Uso de assistentes de código
 

@@ -138,7 +138,7 @@ def _resolver_ferramentas_interrompidas(graph, config) -> None:
 
 
 def respond(graph, thread_id: str, text: str) -> dict:
-    config = {"configurable": {"thread_id": thread_id}, "recursion_limit": RECURSION_LIMIT}
+    config = {"configurable": {"thread_id": thread_id}, "recursion_limit": RECURSION_LIMIT, "run_name": "atendimento"}
     _resolver_ferramentas_interrompidas(graph, config)
     anteriores = graph.get_state(config).values.get("messages", [])
     mensagens = graph.invoke({"messages": [HumanMessage(content=text)]}, config)["messages"]

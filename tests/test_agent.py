@@ -9,6 +9,7 @@ import pytest
 from langchain_core.exceptions import ContextOverflowError
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.runnables import RunnableLambda
+from langchain_core.tracers.run_collector import RunCollectorCallbackHandler
 from langchain_google_genai.chat_models import ChatGoogleGenerativeAIError, GoogleAPIError
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -251,3 +252,26 @@ def test_dados_de_execucao_ficam_no_projeto_em_qualquer_diretorio():
     pasta = Path(cli.__file__).resolve().parent / "runtime"
     assert cli.CHECKPOINTS.parent == pasta
     assert HANDOFF_PATH.parent == pasta
+
+
+def test_trace_identifica_o_turno_e_a_conversa(monkeypatch):
+    graph = build_graph(modelo_em_sequencia(AIMessage(content="ok")), MemorySaver())
+    coletor = RunCollectorCallbackHandler()
+    original = graph.invoke
+    monkeypatch.setattr(graph, "invoke", lambda entrada, config: original(entrada, {**config, "callbacks": [coletor]}))
+    respond(graph, "ana", "oi")
+    trace = coletor.traced_runs[0]
+    assert trace.name == "atendimento"
+    assert trace.extra["metadata"]["thread_id"] == "ana"
+
+
+def test_cli_envia_traces_pendentes_antes_de_sair(tmp_path, monkeypatch):
+    chamadas = []
+    monkeypatch.setattr(cli, "wait_for_all_tracers", lambda: chamadas.append(True))
+    monkeypatch.setattr(cli, "CHECKPOINTS", tmp_path / "c.sqlite")
+    monkeypatch.setattr(cli, "build_models", lambda _: [])
+    monkeypatch.setattr(cli, "build_chain", lambda _: RunnableLambda(lambda _: AIMessage(content="ok")))
+    monkeypatch.setattr("sys.argv", ["cli.py"])
+    monkeypatch.setattr("sys.stdin", io.StringIO("oi\n"))
+    assert cli.main() == 0
+    assert chamadas == [True]
