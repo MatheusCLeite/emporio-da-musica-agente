@@ -24,12 +24,12 @@ Preencha o `.env`:
 python cli.py                    # conversa interativa
 python cli.py --thread ana       # cria ou retoma a conversa "ana", mesmo depois de fechar o programa
 python cli.py --debug            # mostra ferramentas chamadas, modelo usado e falhas de API
-python cli.py --replay examples/inputs/01-violoes-e-preco.txt --out saida.md   # gera uma transcrição
+python cli.py --replay examples/inputs/01-primeira-compra.txt --out saida.md   # gera uma transcrição
 ```
 
 Sem `--thread`, cada execução começa uma conversa nova. Um thread guarda o contato e o pedido verificado de um único cliente, então não o reaproveite entre pessoas.
 
-`AGENT_NOW` fixa data e hora, por exemplo `AGENT_NOW=2026-11-03T10:00:00`. Serve para reproduzir os exemplos em horário comercial.
+`AGENT_NOW` fixa data e hora, por exemplo `AGENT_NOW=2026-11-03T10:00:00`. Serve para reproduzir os exemplos, cada um com a data indicada em [`examples/README.md`](examples/README.md).
 
 ### Tracing com LangSmith (opcional)
 
