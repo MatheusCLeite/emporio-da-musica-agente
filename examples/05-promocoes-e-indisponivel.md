@@ -4,35 +4,35 @@
 
 > Ferramenta: `buscar_produtos({'em_promocao': True})`
 
-**Assistente** (`gemini-3.5-flash-lite`): A campanha de Black Friday não está ativa no momento. Mas temos algumas promoções rolando por aqui, como a Oferta Especial e o Desconto Exclusivo! 
+**Assistente** (`gemini-3.5-flash-lite`): A campanha de Black Friday não está ativa por aqui. 
 
-Dá uma olhada nestas opções que estão com preço promocional:
+Mas temos algumas promoções rolando no momento:
 
-- Kalani KAL-700T Tenor Natural: de R$ 359 por R$ 323,10 (10% de desconto)
-- Ohana CK-20 Concert Natural: de R$ 549 por R$ 439,20 (20% de desconto)
-- Crafter HT-100 Folk Aço Natural: de R$ 2.399 por R$ 1.967,18 (18% de desconto)
-- Taylor 110e Dreadnought Natural: de R$ 5.999 por R$ 5.519,08 (8% de desconto)
+- Kalani KAL-700T Tenor Natural: R$ 323,10 (de R$ 359,00, com 10% de desconto), em até 4x sem juros no cartão, sem desconto adicional no PIX
+- Ohana CK-20 Concert Natural: R$ 439,20 (de R$ 549,00, com 20% de desconto), em até 5x sem juros no cartão, sem desconto adicional no PIX
+- Crafter HT-100 Folk Aço Natural: R$ 1.967,18 (de R$ 2.399,00, com 18% de desconto), em até 12x sem juros no cartão, sem desconto adicional no PIX
+- Taylor 110e Dreadnought Natural: R$ 5.519,08 (de R$ 5.999,00, com 8% de desconto), em até 12x sem juros no cartão, sem desconto adicional no PIX
 
-Procura algum instrumento específico para aproveitar?
+Precisa de ajuda com algum desses instrumentos?
 
 **Cliente:** Quanto fica o Ohana CK-20? Pagando no Pix tem mais desconto?
 
 > Ferramenta: `buscar_produtos({'termo': 'Ohana CK-20'})`
 
-**Assistente** (`gemini-3.5-flash-lite`): O Ohana CK-20 Concert Natural sai por R$ 439,20 (já com 20% de desconto da promoção). Como ele já está com preço promocional, as promoções não acumulam, então o valor é esse mesmo para pagamento à vista ou parcelado em até 5 vezes sem juros no cartão. 
+**Assistente** (`gemini-3.5-flash-lite`): O Ohana CK-20 Concert Natural fica por R$ 439,20 (de R$ 549,00, com 20% de desconto), em até 5x sem juros no cartão, sem desconto adicional no PIX. Como ele está com promoção ativa, não tem desconto adicional no Pix, beleza?
 
-Precisa de mais alguma informação sobre ele?
+Precisa de mais alguma coisa?
 
 **Cliente:** E o Giannini GF-3D, vocês têm?
 
 > Ferramenta: `buscar_produtos({'termo': 'Giannini GF-3D'})`
 
-**Assistente** (`gemini-3.5-flash-lite`): O Giannini GF-3D Dreadnought Sunburst está temporariamente indisponível no momento. 
+**Assistente** (`gemini-3.5-flash-lite`): O Giannini GF-3D Dreadnought Sunburst está temporariamente indisponível no estoque. 
 
-Mas temos algumas alternativas parecidas que podem te interessar:
+Mas temos algumas alternativas legais de violões parecidos:
 
-- Tagima Dallas Tuner Aço Natural por R$ 749,00 (no PIX sai por R$ 711,55, com até 7 vezes sem juros)
-- Shelby SGD-195E Elétrico Aço Sunburst por R$ 799,00 (no PIX sai por R$ 759,05, com até 7 vezes sem juros)
-- Yamaha C70 Nylon Natural por R$ 849,00 (no PIX sai por R$ 806,55, com até 8 vezes sem juros)
+- Shelby SGD-195E Elétrico Aço Sunburst: R$ 799,00 em até 7x sem juros no cartão ou R$ 759,05 no PIX
+- Yamaha C70 Nylon Natural: R$ 849,00 em até 8x sem juros no cartão ou R$ 806,55 no PIX
+- Tagima Dallas Tuner Aço Natural: R$ 749,00 em até 7x sem juros no cartão ou R$ 711,55 no PIX
 
-Curtiu alguma dessas opções?
+Quer saber mais detalhes de alguma dessas opções?
