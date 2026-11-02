@@ -87,7 +87,8 @@ def _compacto(texto: str) -> str:
 
 
 def _casa_com_termo(item: dict, termo: str) -> bool:
-    if _tokens(termo) <= item["_busca"]:
+    tokens = _tokens(termo)
+    if tokens and tokens <= item["_busca"]:
         return True
     # Códigos de modelo variam na escrita: GD20, GD-20 e GD 20 são o mesmo produto.
     compacto = _compacto(termo)

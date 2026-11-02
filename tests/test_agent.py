@@ -196,6 +196,17 @@ def test_build_models_acrescenta_groq_depois_dos_gemini():
     assert {m.openai_api_base for m in groq} == {"https://api.groq.com/openai/v1"}
 
 
+def test_modelo_principal_padrao_e_o_de_maior_cota():
+    modelos = build_models(ALL_TOOLS, {"GOOGLE_API_KEY": "x"})
+    assert [m.bound.model for m in modelos] == ["gemini-3.5-flash-lite", "gemini-3.8-flash"]
+
+
+def test_quatro_rodadas_de_ferramenta_ainda_recebem_resposta_final():
+    chamadas = [chamada(id_=f"c{n}") for n in range(4)]
+    graph = build_graph(modelo_em_sequencia(*chamadas, AIMessage(content="final")), MemorySaver())
+    assert respond(graph, "t", "oi")["texto"] == "final"
+
+
 def test_todos_os_modelos_tem_timeout():
     modelos = build_models(ALL_TOOLS, {"GOOGLE_API_KEY": "x", "GROQ_API_KEY": "y"})
     assert [m.bound.timeout for m in modelos[:2]] == [TIMEOUT_SEGUNDOS] * 2

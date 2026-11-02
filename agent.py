@@ -31,7 +31,7 @@ FALLBACK_TEXT = (
 GROQ_URL = "https://api.groq.com/openai/v1"
 TIMEOUT_SEGUNDOS = 30
 MAX_RODADAS_DE_FERRAMENTAS = 4
-RECURSION_LIMIT = 2 * MAX_RODADAS_DE_FERRAMENTAS + 2
+RECURSION_LIMIT = 2 * MAX_RODADAS_DE_FERRAMENTAS + 4
 # Só falhas de API acionam o modelo reserva; erro de programação deve aparecer.
 # ValueError e TypeError: é assim que os SDKs reagem a uma resposta 200 malformada do provedor.
 API_ERRORS = (
@@ -54,8 +54,8 @@ def build_models(tools, env=os.environ) -> list[Runnable]:
     if not chave:
         raise ConfigError("Defina GOOGLE_API_KEY no arquivo .env (veja .env.example).")
     nomes = (
-        env.get("GEMINI_MODEL") or "gemini-3.8-flash",
-        env.get("GEMINI_FALLBACK_MODEL") or "gemini-3.5-flash-lite",
+        env.get("GEMINI_MODEL") or "gemini-3.5-flash-lite",
+        env.get("GEMINI_FALLBACK_MODEL") or "gemini-3.8-flash",
     )
     modelos = [
         ChatGoogleGenerativeAI(model=n, google_api_key=chave, temperature=0.2, max_retries=1, timeout=TIMEOUT_SEGUNDOS)
@@ -108,7 +108,7 @@ def build_graph(chain: Runnable, checkpointer):
     def agente(state: MessagesState):
         mensagens = state["messages"]
         # Toda saída de erro vira mensagem final, para o histórico nunca ficar com chamada de ferramenta pendente.
-        if _rodadas_desde_o_cliente(mensagens) >= MAX_RODADAS_DE_FERRAMENTAS:
+        if _rodadas_desde_o_cliente(mensagens) > MAX_RODADAS_DE_FERRAMENTAS:
             return {"messages": [AIMessage(content=FALLBACK_TEXT)]}
         try:
             resposta = chain.invoke([SystemMessage(content=system_message(agora())), *mensagens])

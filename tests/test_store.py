@@ -130,3 +130,8 @@ def test_busca_aceita_plural(plural, singular):
 def test_resultado_cortado_avisa_que_ha_mais_itens():
     assert search_products(categoria="Violões")["truncado"] is True
     assert search_products(termo="Takamine GD20")["truncado"] is False
+
+
+@pytest.mark.parametrize("termo", ["🎸", "---", "吉他"])
+def test_termo_sem_letras_nem_numeros_nao_devolve_o_catalogo(termo):
+    assert search_products(termo=termo)["total_encontrado"] == 0

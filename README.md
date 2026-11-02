@@ -67,8 +67,8 @@ O modelo decide o que consultar e como comunicar. Fatos e contas ficam em códig
 
 **Cadeia de modelos.** Cada modelo só é acionado se o anterior falhar por erro de API (qualquer 4xx ou 5xx, rede, timeout de 30 s ou resposta malformada), nunca por qualidade de resposta:
 
-1. `gemini-3.8-flash`: principal.
-2. `gemini-3.5-flash-lite`: reserva do mesmo provedor.
+1. `gemini-3.5-flash-lite`: principal, pela cota diária maior na camada gratuita.
+2. `gemini-3.8-flash`: reserva do mesmo provedor, com cota diária pequena.
 3. `openai/gpt-oss-120b` (Groq): outro provedor, para quando o Gemini inteiro falhar.
 4. `openai/gpt-oss-20b` (Groq): modelo de produção com ferramentas e cota própria.
 
@@ -101,8 +101,7 @@ O agente continua informando nome, preço e estoque, mas a descrição e as spec
 
 ## Limitações conhecidas
 
-- **Cota gratuita:** `gemini-3.8-flash` tem só 20 requisições por dia na camada gratuita, e cada mensagem que usa ferramenta gasta ao menos duas. Em uso contínuo, o atendimento roda quase todo no modelo de reserva.
-- **Exemplos:** foram capturados com `gemini-3.5-flash-lite`, porque a cota do principal acabou nos testes. Cada turno mostra o modelo que respondeu.
+- **Cota gratuita:** cada mensagem que usa ferramenta gasta ao menos duas requisições, e os limites gratuitos são baixos: o `gemini-3.8-flash` tem só 20 por dia. Por isso ele é reserva, não principal. Cada turno dos exemplos mostra o modelo que respondeu.
 - **Latência:** em condições normais, as respostas levaram de 3 a 5 s. Com o Gemini sobrecarregado, uma chegou a 86 s, porque o tempo de espera e as tentativas de cada modelo se somam antes da troca.
 - **Variação entre execuções:** a mesma pergunta pode gerar respostas diferentes. Regras no prompt reduzem esse risco, mas só o que está em código é garantido. Modelos reserva podem seguir pior o prompt.
 - **Encaminhamento simulado:** `registrar_encaminhamento` grava em `runtime/handoffs.jsonl` e devolve um protocolo; não há equipe recebendo.

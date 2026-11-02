@@ -19,8 +19,8 @@ Do usuário:
 
 Do autor do plano (podem ser contestadas):
 - **Recomendação de produtos (o usuário não respondeu a essa pergunta):** o agente recomenda com base em descrição e specs, exceto nos produtos com conflito. Ver "Conflitos no catálogo".
-- Modelo `gemini-3.8-flash` (estável, com camada gratuita, conforme a documentação de 28/10/2026). O suporte a function calling será validado em execução real, pois a documentação não traz lista por modelo.
-- Cadeia de fallback: `gemini-3.8-flash` -> Gemini de limite maior -> `openai/gpt-oss-120b` -> `openai/gpt-oss-20b`, os dois últimos no Groq. Candidato do segundo elo: `gemini-3.5-flash-lite`, a confirmar nos limites da conta no AI Studio. Os dois do Groq são modelos de produção com ferramentas e disponíveis na conta; `llama-3.3-70b-versatile` foi descartado porque a API devolveu 404 para ele. Os IDs ficam em `GROQ_MODEL` e `GROQ_FALLBACK_MODEL` e são validados no passo 2, junto com a disponibilidade na camada gratuita.
+- Modelo principal `gemini-3.5-flash-lite`, trocado pelo usuário depois que o `gemini-3.8-flash` mostrou só 20 requisições por dia na camada gratuita. O suporte a function calling será validado em execução real, pois a documentação não traz lista por modelo.
+- Cadeia de fallback: `gemini-3.5-flash-lite` -> `gemini-3.8-flash` -> `openai/gpt-oss-120b` -> `openai/gpt-oss-20b`, os dois últimos no Groq. Os dois do Groq são modelos de produção com ferramentas e disponíveis na conta; `llama-3.3-70b-versatile` foi descartado porque a API devolveu 404 para ele. Os IDs ficam em `GROQ_MODEL` e `GROQ_FALLBACK_MODEL` e são validados no passo 2, junto com a disponibilidade na camada gratuita.
 - Function calling com ferramentas parametrizadas, sem SQL gerado por LLM, por segurança e LGPD.
 - Políticas por seção do manual escolhida por tema, sem banco vetorial. São 8 páginas com seções bem delimitadas; embeddings acrescentariam infraestrutura sem ganho.
 - Interface CLI, com histórico em SQLite por `thread_id`.
@@ -115,7 +115,7 @@ Persona: assistente virtual da loja, informal mas profissional, amigo que entend
 ## Passos de implementação (um commit real por passo)
 
 1. Base: `git init`, `.gitignore` (excluir `.env`, `runtime/`, `*.3mf` e o PDF do enunciado), `requirements.txt`, `.env.example`, venv com versões atuais. Este design vai para `docs/superpowers/specs/2026-11-01-agente-atendimento-design.md`.
-2. Validar com chamada real, um a um: `gemini-3.8-flash`, o Gemini de limite maior e os dois modelos Groq, cada um com uma ferramenta, para confirmar function calling e o formato de `content`.
+2. Validar com chamada real, um a um: os dois modelos Gemini e os dois modelos Groq, cada um com uma ferramenta, para confirmar function calling e o formato de `content`.
 3. `store.py` + testes (TDD).
 4. `policies.py` + testes.
 5. `tools.py` + testes (LGPD e indisponíveis).
