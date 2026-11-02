@@ -6,14 +6,16 @@
 
 > Ferramenta: `consultar_politicas({'tema': 'horarios'})`
 
-**Assistente** (`gemini-3.5-flash-lite`): Estamos na Rua 14 de Maio, 3200, no Centro de Campo Grande. Hoje ficamos abertos até as 18:00! Precisa de mais alguma coisa?
+**Assistente** (`gemini-3.5-flash-lite`): Boa tarde! A Empório da Música fica na Rua 14 de Maio, 3200, no Centro de Campo Grande. Hoje estamos abertos até as 18:00. 
+
+Precisa de ajuda para encontrar algum instrumento?
 
 **Cliente:** Vocês vendem palhetas?
 
-**Assistente** (`gemini-3.5-flash-lite`): Não vendemos acessórios como palhetas, cordas, cabos ou amplificadores; trabalhamos exclusivamente com instrumentos musicais. 
-
-Precisa de ajuda para escolher algum instrumento?
+**Assistente** (`gemini-3.5-flash-lite`): A Empório da Música vende exclusivamente instrumentos musicais, então não trabalhamos com acessórios como palhetas. Se precisar de algum instrumento, é só falar! Precisa de mais alguma coisa?
 
 **Cliente:** Entendi. Aproveitando, quem ganhou a Copa do Mundo de 2002?
 
-**Assistente** (`gemini-3.5-flash-lite`): Essa eu não sei, meu foco é totalmente a música! Se precisar de ajuda com algum instrumento, é só chamar. Precisa de mais alguma coisa por aqui?
+**Assistente** (`gemini-3.5-flash-lite`): Essa eu passo, meu foco por aqui é só música e instrumentos! 
+
+Se quiser dar uma olhada em violões, guitarras ou qualquer outro som para embalar os dias, é só me chamar. Precisa de mais alguma coisa?
